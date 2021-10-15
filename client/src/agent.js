@@ -3,7 +3,7 @@ import _superagent from "superagent";
 
 const superagent = superagentPromise(_superagent, global.Promise);
 
-const API_ROOT = "https://conduit.productionready.io/api";
+const API_ROOT = "http://localhost:4000/api";
 
 const encode = encodeURIComponent;
 const responseBody = (res) => res.body;
@@ -31,8 +31,14 @@ const requests = {
       .use(tokenPlugin)
       .then(responseBody),
 };
+const user = {
+  login: (email, password) => requests.post("/user/login", { email, password }),
+  register: (username, email, password) =>
+    requests.post("/user/signup", { username, email, password }),
+};
 export default {
   setToken: (_token) => {
     token = _token;
   },
+  user: user,
 };
