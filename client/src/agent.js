@@ -4,7 +4,7 @@ import _superagent from "superagent";
 const superagent = superagentPromise(_superagent, global.Promise);
 
 const API_ROOT = "http://localhost:4000/api";
-
+const Url_GOOGLE = "";
 const encode = encodeURIComponent;
 const responseBody = (res) => res.body;
 
@@ -35,6 +35,7 @@ const user = {
   login: (email, password) => requests.post("/user/login", { email, password }),
   register: (username, email, password) =>
     requests.post("/user/signup", { username, email, password }),
+  googleLogin: (tokenId) => requests.post("/user/googleLogin", { tokenId }),
 };
 export default {
   setToken: (_token) => {

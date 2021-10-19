@@ -5,12 +5,15 @@ import {
   REGISTER_PAGE_UNLOADED,
   ASYNC_START,
   UPDATE_FIELD_AUTH,
+  GOOGLE_LOGIN,
+  GOOGLE_LOGIN_PAGE_UNLOADED,
 } from "../constants/actionTypes";
 
 const auth = (state = {}, action) => {
   switch (action.type) {
     case LOGIN:
     case REGISTER:
+    case GOOGLE_LOGIN:
       return {
         ...state,
         inProgress: false,
@@ -18,9 +21,14 @@ const auth = (state = {}, action) => {
       };
     case LOGIN_PAGE_UNLOADED:
     case REGISTER_PAGE_UNLOADED:
+    case GOOGLE_LOGIN_PAGE_UNLOADED:
       return {};
     case ASYNC_START:
-      if (action.subtype === LOGIN || action.subtype === REGISTER) {
+      if (
+        action.subtype === LOGIN ||
+        action.subtype === REGISTER ||
+        action.subtype === GOOGLE_LOGIN
+      ) {
         return { ...state, inProgress: true };
       }
       break;

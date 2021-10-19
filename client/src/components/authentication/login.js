@@ -1,29 +1,43 @@
-import { React } from "react";
+import { React, useState, useEffect } from "react";
 import agent from "../../agent";
-
+import { GoogleLogin } from "react-google-login";
 import { connect } from "react-redux";
+
 import {
+  GOOGLE_LOGIN,
   UPDATE_FIELD_AUTH,
   LOGIN,
   LOGIN_PAGE_UNLOADED,
+  GOOGLE_LOGIN_PAGE_UNLOADED,
 } from "../../constants/actionTypes";
 // import { Route, Switch } from 'react-router-dom';
 const Login = (props) => {
-  const email = props.email;
-  const password = props.password;
-  const analyseEmail = (e) => {
-    props.onChangeEmail(e.target.value);
-  };
-  const analysePassword = (e) => {
-    props.onChangePassword(e.target.value);
+  const [loginInput, setLoginInput] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleLoginChange = (e) => {
+    const { name, value } = e.target;
+    setLoginInput((loginInput) => ({ ...loginInput, [name]: value }));
   };
   const submitForm = (email, password) => (e) => {
     e.preventDefault();
     props.onSubmit(email, password);
   };
+  useEffect(() => {}, [props.errors]);
+  const responseGoogleSuccess = (res) => {
+    props.onSubmitGoogle(res.tokenId);
+  };
+  const responseGoogleError = (err) => {
+    console.log("googleErr", err);
+  };
   return (
     <section className="login">
-      <form onSubmit={submitForm(email, password)} className="login__form">
+      <form
+        onSubmit={submitForm(loginInput.email, loginInput.password)}
+        className="login__form"
+      >
         <div className="logo-content">
           <a href="/" className="header__logo__content--logo">
             <span>V</span>L<span>V</span>
@@ -33,13 +47,14 @@ const Login = (props) => {
           className="login__form--input"
           type="email"
           name="email"
-          value={email}
+          value={loginInput.email}
           placeholder="Your email..."
-          onChange={analyseEmail}
+          onChange={handleLoginChange}
           required
           maxLength="60"
         />
-        <p className="login-error">error</p>
+        <p className="login-error">{props.errors}</p>
+        <br />
         <input
           className="login__form--input"
           type="password"
@@ -47,8 +62,8 @@ const Login = (props) => {
           placeholder="Your password..."
           required
           maxLength="60"
-          onChange={analysePassword}
-          value={password}
+          onChange={handleLoginChange}
+          value={loginInput.password}
         />
         <p className="login-error-pass">errorPass</p>
         <p className="login__form--forgotp">
@@ -63,9 +78,21 @@ const Login = (props) => {
         >
           Login
         </button>
-        <button className="login__form--login-google">
-          Sign in with Google
-        </button>
+        <GoogleLogin
+          clientId="261881368887-r96i6dvmjv2olaodl8t54gh66o9ovu2n.apps.googleusercontent.com"
+          buttonText="Login with Google"
+          onSuccess={responseGoogleSuccess}
+          onFailure={responseGoogleError}
+          cookiePolicy={"single_host_origin"}
+          render={(renderProps) => (
+            <button
+              className="login__form--button"
+              onClick={renderProps.onClick}
+            >
+              Login with Google
+            </button>
+          )}
+        />
 
         <p className="login__form--account">
           you don't have an account{" "}
@@ -85,6 +112,12 @@ const mapDispatchToProps = (dispatch) => ({
     dispatch({ type: UPDATE_FIELD_AUTH, key: "password", value }),
   onSubmit: (email, password) =>
     dispatch({ type: LOGIN, payload: agent.user.login(email, password) }),
+  onSubmitGoogle: (tokenId) =>
+    dispatch({
+      type: GOOGLE_LOGIN,
+      payload: agent.user.googleLogin(tokenId),
+    }),
   onUnload: () => dispatch({ type: LOGIN_PAGE_UNLOADED }),
+  onUnloadGoogle: () => dispatch({ type: GOOGLE_LOGIN_PAGE_UNLOADED }),
 });
 export default connect(mapStateToProps, mapDispatchToProps)(Login);

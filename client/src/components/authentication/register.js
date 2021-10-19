@@ -1,12 +1,15 @@
-import { React, useState } from "react";
+import { React, useState, useEffect } from "react";
 import agent from "../../agent";
 import Auth from "../../services/auth-services";
 import { connect } from "react-redux";
 import {
   UPDATE_FIELD_AUTH,
+  GOOGLE_LOGIN,
   REGISTER,
   REGISTER_PAGE_UNLOADED,
+  GOOGLE_LOGIN_PAGE_UNLOADED,
 } from "../../constants/actionTypes";
+import { GoogleLogin } from "react-google-login";
 
 const Register = (props) => {
   const [color, setColor] = useState("white");
@@ -16,48 +19,47 @@ const Register = (props) => {
   const [errorPassrepeat, setErrorPassrepeat] = useState("");
   // const [colorPassRepeat, setColorPassrepeat] = useState("white");
   // const [repeatPassword, setRepeatPassword] = useState("");
-  const username = props.username;
-  const email = props.email;
-  const password = props.password;
-  const repeatPassword = props.repeatPassword;
-  const analyseEmail = (e) => {
-    if (Auth.checkEmailValidation(e.target.value) === true) {
+  const [registerInput, setRegisterInput] = useState({
+    username: "",
+    password: "",
+    repeatPassword: "",
+    email: "",
+  });
+  const handleRegisterChange = (e) => {
+    const { id, value } = e.target;
+
+    setRegisterInput((registerInput) => ({ ...registerInput, [id]: value }));
+  };
+  useEffect(() => {
+    setErrorPass(Auth.checkPasswordValidation(registerInput.password));
+    setErrorPassrepeat(
+      Auth.comparePassword(registerInput.password, registerInput.repeatPassword)
+    );
+
+    if (Auth.checkEmailValidation(registerInput.email) === true) {
       setError("Done");
       setColor("green");
-    } else {
+    } else if (Auth.checkEmailValidation(registerInput.email) === false) {
       setError("Please enter a valid email");
       setColor("red");
-    }
-    props.onChangeEmail(e.target.value);
-  };
-  const analysePassword = (e) => {
-    setErrorPass(Auth.checkPasswordValidation(e.target.value));
-    if (errorPass === "strong") {
+    } else if (errorPass === "strong") {
       setColorPass("green");
     } else if (errorPass === "medium") {
       setColorPass("orange");
     } else if ((errorPass === "weak") | "please enter your password") {
       setColorPass("red");
     }
-    props.onChangePassword(e.target.value);
-  };
-  const usernameChange = (e) => {
-    props.onChangeUsername(e.target.value);
-  };
-  const analyseRepeeatPassword = (e) => {
-    setErrorPassrepeat(Auth.comparePassword(password, e.target.value));
-    // setRepeatPassword(e.target.value);
-    props.onChangeRepeatPassword(e.target.value);
-    // console.log();
-  };
+  }, [
+    registerInput.email,
+    registerInput.password,
+    registerInput.repeatPassword,
+    errorPass,
+  ]);
 
   const submitForm = (username, email, password, repeatPassword) => (e) => {
     e.preventDefault();
-    console.log(
-      "",
-      Auth.comparePassword(password, repeatPassword) === "Matched"
-    );
-    console.log("repeatPassword", password, repeatPassword);
+    // console.log("all", username, email, password, repeatPassword);
+    // console.log("repeatPassword", password, repeatPassword);
     if (
       Auth.checkEmailValidation(email) === true &&
       Auth.checkPasswordValidation(password) === "strong" &&
@@ -68,11 +70,22 @@ const Register = (props) => {
       props.onUnload();
     }
   };
+  const responseGoogleSuccess = (res) => {
+    props.onSubmitGoogle(res.tokenId);
+  };
+  const responseGoogleError = (err) => {
+    console.log("googleErr", err);
+  };
   return (
     <section className="login">
       <form
         className="login__form"
-        onSubmit={submitForm(username, email, password, repeatPassword)}
+        onSubmit={submitForm(
+          registerInput.username,
+          registerInput.email,
+          registerInput.password,
+          registerInput.repeatPassword
+        )}
       >
         <div className="logo-content">
           <a href="/" className="header__logo__content--logo">
@@ -83,19 +96,22 @@ const Register = (props) => {
           className="login__form--input"
           type="text"
           name="username"
-          value={username}
+          id="username"
+          value={registerInput.username}
           placeholder="Your name..."
-          onChange={usernameChange}
+          onChange={handleRegisterChange}
           required
           maxLength="60"
         />
+        <br />
         <input
           className="login__form--input"
           type="email"
+          id="email"
           name="email"
-          value={email}
+          value={registerInput.email}
           placeholder="Your email..."
-          onChange={analyseEmail}
+          onChange={handleRegisterChange}
           required
           maxLength="60"
         />
@@ -106,11 +122,12 @@ const Register = (props) => {
           className="login__form--input"
           type="password"
           name="password"
+          id="password"
           placeholder="Your password..."
           required
           maxLength="60"
-          onChange={analysePassword}
-          value={password}
+          onChange={handleRegisterChange}
+          value={registerInput.password}
         />
         <p style={{ color: colorPass }} className="login-error-pass">
           {errorPass}
@@ -118,10 +135,11 @@ const Register = (props) => {
         <input
           className="login__form--input"
           type="password"
-          name="repeatpassword"
-          value={repeatPassword}
+          name="repeatPassword"
+          id="repeatPassword"
+          value={registerInput.repeatPassword}
           placeholder="Confirm password..."
-          onChange={analyseRepeeatPassword}
+          onChange={handleRegisterChange}
           required
         />
         <p className="login-error">{errorPassrepeat}</p>
@@ -131,11 +149,23 @@ const Register = (props) => {
           type="submit"
           disabled={props.inProgress}
         >
-          Login
+          Sign up
         </button>
-        <button className="login__form--login-google">
-          Sign up with Google
-        </button>
+        <GoogleLogin
+          clientId="261881368887-r96i6dvmjv2olaodl8t54gh66o9ovu2n.apps.googleusercontent.com"
+          buttonText="Login with Google"
+          onSuccess={responseGoogleSuccess}
+          onFailure={responseGoogleError}
+          cookiePolicy={"single_host_origin"}
+          render={(renderProps) => (
+            <button
+              className="login__form--button"
+              onClick={renderProps.onClick}
+            >
+              Sign up with Google
+            </button>
+          )}
+        />
 
         <p className="login__form--account">
           you have an account{" "}
@@ -149,8 +179,8 @@ const Register = (props) => {
 };
 const mapStateToProps = (state) => ({ ...state.auth });
 const mapDispatchToProps = (dispatch) => ({
-  onChangeEmail: (value) =>
-    dispatch({ type: UPDATE_FIELD_AUTH, key: "email", value }),
+  onChangeEmail: (key, value) =>
+    dispatch({ type: UPDATE_FIELD_AUTH, key: key, value }),
   onChangePassword: (value) =>
     dispatch({ type: UPDATE_FIELD_AUTH, key: "password", value }),
   onChangeUsername: (value) =>
@@ -162,6 +192,12 @@ const mapDispatchToProps = (dispatch) => ({
       type: REGISTER,
       payload: agent.user.register(username, email, password),
     }),
+  onSubmitGoogle: (tokenId) =>
+    dispatch({
+      type: GOOGLE_LOGIN,
+      payload: agent.user.googleLogin(tokenId),
+    }),
   onUnload: () => dispatch({ type: REGISTER_PAGE_UNLOADED }),
+  onUnloadGoogle: () => dispatch({ type: GOOGLE_LOGIN_PAGE_UNLOADED }),
 });
 export default connect(mapStateToProps, mapDispatchToProps)(Register);
