@@ -1,13 +1,15 @@
 const User = require("../models/user");
 const passport = require("passport");
-const env = require("dotenv").config();
+
 const { OAuth2Client } = require("google-auth-library");
-// const mailgun =require("mailgun-js")
-// const Domain="261881368887-r96i6dvmjv2olaodl8t54gh66o9ovu2n.apps.googleusercontent.com"
+const mailgun = require("mailgun-js");
+const DOMAIN = "sandboxb5fd514e8c784368847c3e4d8992c9fe.mailgun.org";
+const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: DOMAIN });
+
 const client = new OAuth2Client(
   "261881368887-r96i6dvmjv2olaodl8t54gh66o9ovu2n.apps.googleusercontent.com"
 );
-// const mg = mailgun({apiKey:process.env.MAILGUN_API_KEY,domain:Domain})
+
 exports.hello = async function (req, res) {
   res.send("hello");
 };
@@ -106,10 +108,27 @@ exports.signUp = async (req, res) => {
       user.username = req.body.username;
       user.email = req.body.email;
       user.setPassword(req.body.password);
-      const data = await user.save();
-      return res.status(200).json({ user: data.toAuthJSON() });
+      const userData = await user.save();
+
+      const data = {
+        from: "jdidi@noreply.com",
+        to: req.body.email,
+        subject: "welcome to VLV",
+        html: `<p>enjoy an experience with huge number of villas to rent and buy<p>`,
+      };
+      console.log("process.env.MAILGUN_API_KEY", process.env.MAILGUN_API_KEY);
+      const Mg = await mg.messages().send(data);
+      if (Mg) {
+        return res.json({
+          user: {
+            message: "Email has been sent ,please activate your account",
+          },
+        });
+      } else {
+        return res.status(400).json({ error: Mg.error.message });
+      }
     }
   } catch (err) {
-    res.send(err);
+    res.send(err.message);
   }
 };
