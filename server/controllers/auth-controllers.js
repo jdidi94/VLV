@@ -3,7 +3,7 @@ const passport = require("passport");
 
 const { OAuth2Client } = require("google-auth-library");
 const mailgun = require("mailgun-js");
-const DOMAIN = "sandboxb5fd514e8c784368847c3e4d8992c9fe.mailgun.org";
+const DOMAIN = process.env.DOMAIN;
 const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: DOMAIN });
 
 const client = new OAuth2Client(
