@@ -112,16 +112,17 @@ exports.signUp = async (req, res) => {
 
       const data = {
         from: "jdidi@noreply.com",
-        to: req.body.email,
-        subject: "welcome to VLV",
-        html: `<p>enjoy an experience with huge number of villas to rent and buy<p>`,
+        to: user.email,
+        subject: "VLV Verify account",
+        html: `<p>enjoy an experience with huge number of villas to rent and buy<p>
+        <a href="${process.env.URL_ACTIVATION}/${user.token}" >Verify account</a>`,
       };
       console.log("process.env.MAILGUN_API_KEY", process.env.MAILGUN_API_KEY);
       const Mg = await mg.messages().send(data);
       if (Mg) {
         return res.json({
           user: {
-            message: "Email has been sent ,please activate your account",
+            message: "Email has been sent, please activate your account",
           },
         });
       } else {
