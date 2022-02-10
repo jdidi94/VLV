@@ -1,6 +1,7 @@
 const User = require("../models/user");
 const passport = require("passport");
-
+const jwt = require("jsonwebtoken");
+const secret = require("../config").secret;
 const { OAuth2Client } = require("google-auth-library");
 const mailgun = require("mailgun-js");
 const DOMAIN = process.env.DOMAIN;
@@ -32,6 +33,7 @@ exports.login = function (req, res, next) {
 
       if (user) {
         user.token = user.generateJWT();
+
         return res.json({ user: user.toAuthJSON() });
       } else {
         return res.status(422).json(info);
@@ -91,45 +93,70 @@ exports.googleLogin = async (req, res) => {
 
 exports.signUp = async (req, res) => {
   try {
-    const email = await User.findOne({ email: req.body.email });
-    const username = await User.findOne({ username: req.body.username });
+    const { username, email, password } = req.body;
+    const emailUser = await User.findOne({ email });
+    const usernameUser = await User.findOne({ username });
 
-    if (username && email) {
+    if (usernameUser && emailUser) {
       return res
         .status(422)
         .json({ errors: "Username and email is already used" });
-    } else if (username) {
+    } else if (usernameUser) {
       return res.status(400).json({ errors: "Username is already used" });
-    } else if (email) {
+    } else if (emailUser) {
       return res.status(400).json({ errors: "Email is already used" });
     } else {
-      const user = new User();
+      const Token = jwt.sign(
+        { username, email, password },
+        process.env.SECRET,
+        { expiresIn: "20m" }
+      );
 
-      user.username = req.body.username;
-      user.email = req.body.email;
-      user.setPassword(req.body.password);
-      const userData = await user.save();
-
+      console.log("email", email);
       const data = {
-        from: "jdidi@noreply.com",
-        to: user.email,
+        from: "noreply@gmail.com.com",
+        to: email,
         subject: "VLV Verify account",
         html: `<p>enjoy an experience with huge number of villas to rent and buy<p>
-        <a href="${process.env.URL_ACTIVATION}/${user.token}" >Verify account</a>`,
+        <a href="${process.env.URL_ACTIVATION}/${Token}" >Verify account</a>`,
       };
-      console.log("process.env.MAILGUN_API_KEY", process.env.MAILGUN_API_KEY);
-      const Mg = await mg.messages().send(data);
-      if (Mg) {
-        return res.json({
+
+      mg.messages().send(data, function (error, body) {
+        if (error) {
+          return res.status(400).json({ errors: error.message });
+        }
+        return res.status(200).json({
           user: {
             message: "Email has been sent, please activate your account",
           },
         });
-      } else {
-        return res.status(400).json({ error: Mg.error.message });
-      }
+      });
     }
   } catch (err) {
     res.send(err.message);
   }
+};
+exports.activateAccount = async (req, res) => {
+  const { token } = req.body;
+  // const user = await User.findById(req.payload.id);
+  if (token) {
+    jwt.verify(token, process.env.SECRET, (err, decodeData) => {
+      if (err) {
+        return res.status().json({ errors: "Incorrect or expired link" });
+      }
+      const { username, email, password } = decodeData;
+      const useData = new User();
+
+      useData.username = username;
+      useData.email = email;
+      useData.setPassword(password);
+      useData.save((err, success) => {
+        if (err) {
+          return res.status(400).json({ errors: err });
+        }
+        return res.status(200).json({ user: useData.toAuthJSON() });
+      });
+    });
+  }
+  return res.status(400).json({ error: "something went wrong..." });
 };

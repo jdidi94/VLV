@@ -2,7 +2,7 @@ import { React, useState, useEffect } from "react";
 import agent from "../../agent";
 import { GoogleLogin } from "react-google-login";
 import { connect } from "react-redux";
-
+import ListErrors from "./listerrors";
 import {
   GOOGLE_LOGIN,
   UPDATE_FIELD_AUTH,
@@ -53,7 +53,7 @@ const Login = (props) => {
           required
           maxLength="60"
         />
-        <p className="login-error">{props.errors}</p>
+       
         <br />
         <input
           className="login__form--input"
@@ -65,7 +65,7 @@ const Login = (props) => {
           onChange={handleLoginChange}
           value={loginInput.password}
         />
-        <p className="login-error-pass">errorPass</p>
+
         <p className="login__form--forgotp">
           <a className="login-link" href="/signup">
             Forgot password
@@ -93,7 +93,7 @@ const Login = (props) => {
             </button>
           )}
         />
-
+        <ListErrors listerrors={props.errors} />
         <p className="login__form--account">
           you don't have an account{" "}
           <a className="login-link" href="/register">

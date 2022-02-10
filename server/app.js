@@ -1,6 +1,7 @@
 const express = require("express");
 const env = require("dotenv").config();
 const errorhandler = require("errorhandler");
+const cookieParser = require("cookie-parser");
 const passport = require("./config/passport");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
@@ -9,14 +10,20 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const morgan = require("morgan");
 const userRoutes = require("./routes/user-routes");
-app.use(morgan("combined"));
-app.use(cors());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
 const mongoose = require("mongoose");
 const mongoUri = process.env.mongoUri;
-// console.log("mongoUri",mongoUri)
-// console.log('process.env.secret',process.env.secret)
+app.use(morgan("combined"));
+app.use(
+  cors({
+    origin: ["http://localhost:3000"],
+    methods: ["PUT", "POST", "GET", "PATCH"],
+    credentials: true,
+  })
+);
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(cookieParser());
+
 var isProduction = process.env.NODE_ENV === "production";
 const db = mongoose.connect(
   mongoUri,
